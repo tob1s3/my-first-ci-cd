@@ -1,4 +1,5 @@
 name: CI/CD Pipeline with SAST
+
 on:
   push:
     branches: [ main, master ]
@@ -21,19 +22,24 @@ jobs:
         with:
           python-version: '3.10'
 
-      # Шаг 3: Устанавливаем зависимости
+      # Шаг 3: Устанавливаем зависимости (С flake8)
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest bandit
+          pip install pytest bandit flake8  # ← добавили flake8
 
-      # Шаг 4: Запускаем SAST-сканер (Bandit) для анализа исходного кода
+      # Шаг 4: Запускаем проверку стиля кода (flake8) - НОВЫЙ ШАГ
+      - name: Run code linter (flake8)
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      # Шаг 5: Запускаем SAST-сканер (Bandit) для анализа исходного кода
       - name: Run Bandit SAST Scan
         run: |
           bandit -r . --severity-level high --confidence-level high -f json -o bandit_results.json || true
 
-      # Шаг 4.1: Сохраняем отчет Bandit как артефакт (НОВЫЙ ШАГ)
+      # Шаг 5.1: Сохраняем отчет Bandit как артефакт
       - name: Upload Bandit report as artifact
         uses: actions/upload-artifact@v4
         if: always() # Загружаем артефакт, даже если пайплайн упал
@@ -41,7 +47,7 @@ jobs:
           name: bandit-sast-report
           path: bandit_results.json
 
-      # Шаг 4.2: Анализируем отчет Bandit и "валим" пайплайн при критических уязвимостях
+      # Шаг 5.2: Анализируем отчет Bandit и "валим" пайплайн при критических уязвимостях
       - name: Check Bandit Results
         id: bandit-check
         run: |
@@ -57,7 +63,7 @@ jobs:
             echo "Bandit report not found. Assuming no issues."
           fi
 
-      # Шаг 5: Запускаем сканер зависимостей Trivy
+      # Шаг 6: Запускаем сканер зависимостей Trivy
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
@@ -68,7 +74,7 @@ jobs:
           ignore-unfixed: true
           severity: 'HIGH,CRITICAL'
 
-      # Шаг 6: Запускаем наши unit-тесты
+      # Шаг 7: Запускаем наши unit-тесты
       - name: Run Tests with pytest
         run: |
           python -m pytest tests/ -v
