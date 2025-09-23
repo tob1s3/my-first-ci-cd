@@ -52,6 +52,12 @@ jobs:
         else
           echo "Bandit report not found. Assuming no issues."
         fi
+        - name: Upload Bandit report as artifact
+        uses: actions/upload-artifact@v4
+        if: always() # Загружаем артефакт, даже если пайплайн упал
+        with:
+          name: bandit-sast-report
+          path: bandit_results.json  
 
     # Шаг 5: Запускаем сканер зависимостей Trivy
     - name: Run Trivy vulnerability scanner
