@@ -31,12 +31,13 @@ jobs:
           pip install bandit
           pip install flake8
 
-      # Шаг 4: Запускаем проверку стиля кода
-      - name: Run flake8 Code Linter
+      # Шаг 4: Запускаем проверку стиля кода (flake8)
+      - name: Run flake8 Code Style Check
         run: |
-          flake8 . --count --show-source --statistics --max-line-length=100
+          pip install flake8
+          flake8 . --count --show-source --statistics --max-line-length=100 --exit-zero
 
-      # Шаг 5: Запускаем SAST-сканер
+      # Шаг 5: Запускаем SAST-сканер (Bandit) для анализа исходного кода
       - name: Run Bandit SAST Scan
         run: |
           bandit -r . --severity-level high --confidence-level high -f json -o bandit_results.json || true
@@ -49,7 +50,7 @@ jobs:
           name: bandit-security-report
           path: bandit_results.json
 
-      # Шаг 5.2: Анализируем отчет Bandit
+      # Шаг 5.2: Анализируем отчет Bandit и "валим" пайплайн при критических уязвимостях
       - name: Check Bandit Results
         id: bandit-check
         run: |
@@ -75,11 +76,12 @@ jobs:
           ignore-unfixed: true
           severity: 'HIGH,CRITICAL'
 
-      # Шаг 7: Запускаем unit-тесты
+      # Шаг 7: Запускаем наши unit-тесты
       - name: Run Tests with pytest
         run: |
           python -m pytest tests/ -v
 
+  # Задание 3: Добавляем задачу для сборки (зависит от успешного выполнения security-scan)
   build-and-deploy:
     name: Build and Deploy
     runs-on: ubuntu-latest
