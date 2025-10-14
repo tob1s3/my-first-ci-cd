@@ -22,23 +22,23 @@ jobs:
         with:
           python-version: '3.10'
 
-      # Шаг 3: Устанавливаем зависимости - ТОЧНО ТАК!
+      # Шаг 3: Устанавливаем зависимости
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest bandit flake8
+          pip install pytest
+          pip install bandit
+          pip install flake8
 
       # Шаг 4: Запускаем проверку стиля кода
       - name: Run flake8 Code Linter
         run: |
-          echo "=== Running flake8 Code Style Check ==="
           flake8 . --count --show-source --statistics --max-line-length=100
 
       # Шаг 5: Запускаем SAST-сканер
       - name: Run Bandit SAST Scan
         run: |
-          echo "=== Running Bandit Security Scan ==="
           bandit -r . --severity-level high --confidence-level high -f json -o bandit_results.json || true
 
       # Шаг 5.1: Сохраняем отчет Bandit как артефакт
@@ -53,7 +53,6 @@ jobs:
       - name: Check Bandit Results
         id: bandit-check
         run: |
-          echo "=== Analyzing Bandit Results ==="
           if [ -f bandit_results.json ]; then
             if jq -e '.results[] | select(.issue_confidence == "HIGH" and .issue_severity == "HIGH")' bandit_results.json; then
               echo "Bandit found critical vulnerabilities! Failing the pipeline."
@@ -79,7 +78,6 @@ jobs:
       # Шаг 7: Запускаем unit-тесты
       - name: Run Tests with pytest
         run: |
-          echo "=== Running Unit Tests ==="
           python -m pytest tests/ -v
 
   build-and-deploy:
@@ -104,11 +102,11 @@ jobs:
 
       - name: Build Application
         run: |
-          echo "=== Building the Application ==="
-          echo "All security checks passed successfully!"
-          echo "Application is ready for deployment"
+          echo "Building the application"
+          echo "All security checks passed"
+          echo "Application ready for deployment"
 
       - name: Simulate Deployment
         run: |
-          echo "=== Simulating Deployment to Production ==="
-          echo "Deployment simulation completed successfully!"
+          echo "Simulating deployment"
+          echo "Deployment completed"
