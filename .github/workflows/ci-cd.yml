@@ -35,7 +35,7 @@ jobs:
       - name: Run flake8 Code Style Check
         run: |
           pip install flake8
-          flake8 . --count --show-source --statistics --max-line-length=100 --exit-zero
+          flake8 . --count --show-source --statistics --max-line-length=100 || true
 
       # Шаг 5: Запускаем SAST-сканер (Bandit) для анализа исходного кода
       - name: Run Bandit SAST Scan
@@ -81,7 +81,6 @@ jobs:
         run: |
           python -m pytest tests/ -v
 
-  # Задание 3: Добавляем задачу для сборки (зависит от успешного выполнения security-scan)
   build-and-deploy:
     name: Build and Deploy
     runs-on: ubuntu-latest
