@@ -32,10 +32,10 @@ jobs:
           pip install flake8
 
       # Шаг 4: Запускаем проверку стиля кода (flake8)
-      - name: Run flake8 Code Style Check
+      - name: Run flake8 code style check
         run: |
           pip install flake8
-          flake8 . --count --show-source --statistics --max-line-length=100 || true
+          flake8 . --count --statistics --exit-zero
 
       # Шаг 5: Запускаем SAST-сканер (Bandit) для анализа исходного кода
       - name: Run Bandit SAST Scan
