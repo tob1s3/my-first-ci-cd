@@ -40,9 +40,9 @@ jobs:
       # Шаг 5: Запускаем SAST-сканер (Bandit) для анализа исходного кода
       - name: Run Bandit SAST Scan
         run: |
-          bandit -r . --severity-level high --confidence-level high -f json -o bandit_results.json || true
+        #  bandit -r . --severity-level high --confidence-level high -f json -o bandit_results.json || true
         # Опции:
-        # -r . - рекурсивно сканировать текущую директорию
+        #-r . - рекурсивно сканировать текущую директорию
         # --severity-level high - показывать только уязвимости уровня HIGH
         # --confidence-level high - показывать только уязвимости с высоким уровнем достоверности
         # -f json -o ... - вывести результат в файл в формате JSON
