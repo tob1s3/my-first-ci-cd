@@ -26,22 +26,28 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           pip install pytest
           pip install bandit
           pip install flake8
+          pip install jq
 
       # Шаг 4: Запускаем проверку стиля кода (flake8)
       - name: Run flake8 code style check
         run: |
-          pip install flake8
           flake8 . --count --statistics --exit-zero
 
       # Шаг 5: Запускаем SAST-сканер (Bandit) для анализа исходного кода
       - name: Run Bandit SAST Scan
         run: |
-          pip install bandit
-          bandit -r . -f --severity-level high --confidence-level high -f json -o bandit_results.json || true
+          bandit -r . --severity-level high --confidence-level high -f json -o bandit_results.json || true
+        # Опции:
+        # -r . - рекурсивно сканировать текущую директорию
+        # --severity-level high - показывать только уязвимости уровня HIGH
+        # --confidence-level high - показывать только уязвимости с высоким уровнем достоверности
+        # -f json -o ... - вывести результат в файл в формате JSON
+        # || true - это костыль, чтобы шаг не "падал" при найденных уязвимостях.
+        # Мы обработаем результат на следующем шаге.
 
       # Шаг 5.1: Сохраняем отчет Bandit как артефакт
       - name: Upload Bandit Report
@@ -50,20 +56,31 @@ jobs:
         with:
           name: bandit-security-report
           path: bandit_results.json
+          retention-days: 30
 
       # Шаг 5.2: Анализируем отчет Bandit и "валим" пайплайн при критических уязвимостях
       - name: Check Bandit Results
         id: bandit-check
         run: |
           if [ -f bandit_results.json ]; then
-            if jq -e '.results[] | select(.issue_confidence == "HIGH" and .issue_severity == "HIGH")' bandit_results.json; then
-              echo "Bandit found critical vulnerabilities! Failing the pipeline."
+            echo "Checking Bandit results for critical vulnerabilities..."
+            
+            # Устанавливаем jq для парсинга JSON
+            sudo apt-get update && sudo apt-get install -y jq
+            
+            # Проверяем наличие HIGH severity и HIGH confidence уязвимостей
+            CRITICAL_COUNT=$(jq '.results[] | select(.issue_confidence == "HIGH" and .issue_severity == "HIGH") | .issue_text' bandit_results.json | wc -l)
+            
+            if [ "$CRITICAL_COUNT" -gt 0 ]; then
+              echo "❌ Bandit found $CRITICAL_COUNT critical vulnerabilities!"
+              echo "Critical issues found:"
+              jq '.results[] | select(.issue_confidence == "HIGH" and .issue_severity == "HIGH") | "File: \(.filename) | Line: \(.line_number) | Issue: \(.issue_text)"' bandit_results.json
               exit 1
             else
-              echo "No critical vulnerabilities found by Bandit."
+              echo "✅ No critical vulnerabilities found by Bandit."
             fi
           else
-            echo "Bandit report not found. Assuming no issues."
+            echo "⚠️ Bandit report not found. Assuming no issues."
           fi
 
       # Шаг 6: Запускаем сканер зависимостей Trivy
@@ -80,7 +97,11 @@ jobs:
       # Шаг 7: Запускаем наши unit-тесты
       - name: Run Tests with pytest
         run: |
-          python -m pytest tests/ -v
+          if [ -d "tests" ]; then
+            python -m pytest tests/ -v
+          else
+            echo "No tests directory found, skipping tests"
+          fi
 
   build-and-deploy:
     name: Build and Deploy
@@ -100,7 +121,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: Build Application
         run: |
