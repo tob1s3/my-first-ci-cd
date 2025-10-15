@@ -40,6 +40,7 @@ jobs:
       # Шаг 5: Запускаем SAST-сканер (Bandit) для анализа исходного кода
       - name: Run Bandit SAST Scan
         run: |
+          pip install bandit
           bandit -r . -f --severity-level high --confidence-level high -f json -o bandit_results.json || true
 
       # Шаг 5.1: Сохраняем отчет Bandit как артефакт
