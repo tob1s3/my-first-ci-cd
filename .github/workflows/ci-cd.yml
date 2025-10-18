@@ -72,12 +72,12 @@ jobs:
             CRITICAL_COUNT=$(jq '.results[] | select(.issue_confidence == "HIGH" and .issue_severity == "HIGH") | .issue_text' bandit_results.json | wc -l)
             
             if [ "$CRITICAL_COUNT" -gt 0 ]; then
-              echo "❌ Bandit found $CRITICAL_COUNT critical vulnerabilities!"
+              echo "Bandit found $CRITICAL_COUNT critical vulnerabilities!"
               echo "Critical issues found:"
               jq '.results[] | select(.issue_confidence == "HIGH" and .issue_severity == "HIGH") | "File: \(.filename) | Line: \(.line_number) | Issue: \(.issue_text)"' bandit_results.json
               exit 1
             else
-              echo "✅ No critical vulnerabilities found by Bandit."
+              echo "No critical vulnerabilities found by Bandit."
             fi
           else
             echo "⚠️ Bandit report not found. Assuming no issues."
